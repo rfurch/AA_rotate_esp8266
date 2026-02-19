@@ -1,0 +1,111 @@
+python -V
+pip -V
+pip3 -V
+mkdir pio
+cd pio
+pip install platformio
+pio --version
+pio boards
+
+mkdir eth01-01
+cd eth01-01
+
+pio boards | findstr eth01
+pio boards | findstr eth
+pio boards 
+pio boards | findstr "eth"
+pio boards  > boards
+pio poroject init --board wt32-eth01
+pio project init --board wt32-eth01
+pio project init --board esp32dev
+
+pio project init --board wt32-eth01
+pio run
+pio run -t upload
+pio device monitor
+pio device monitor -b 115200
+
+pio lib 
+pio device monitor
+
+pio lib search "header:Ethernet.h"
+
+pio platform update espressif32
+
+
+curl -o /tmp/fwupdate.bin http://10.129.6.8/BZ.ar7240.v3.9.54.9373.180913.2356.bin
+
+
+aIbnTIQyMnV6Nthk
+nUevo1983
+
+# check coils
+modpoll.exe -m tcp -t0 -r1 -c10 10.129.6.230
+
+# check holding regs
+modpoll.exe -m tcp -t4 -r1 -c60 10.129.6.230
+
+# write 3rd coil 
+modpoll.exe -m tcp -t0 -r3 -c1  10.129.6.230  0
+modpoll.exe -m tcp -t0 -r3 -c1  10.129.6.230  1
+
+SnmpWalk.exe -c:public -v:1 -r:10.129.6.230 -os:.1.3.6.1
+Snmpget.exe -c:public -v:1 -r:10.129.6.230 -o:1.3.6.1.4.1.99999.1.1.1
+
+# set AA 1
+Snmpset.exe -c:private -v:1 -r:10.129.6.230 -o:.1.3.6.1.4.1.99999.1.60.1 -tp:int -val:1
+
+#Force AA1
+modpoll.exe -m tcp -t0 -r7 -c1  10.129.6.230  0
+Snmpset.exe -c:private -v:1 -r:10.129.6.230 -o:.1.3.6.1.4.1.99999.1.60.1 -tp:int -val:1
+
+#Force AA2
+modpoll.exe -m tcp -t0 -r8 -c1  10.129.6.230  0
+Snmpset.exe -c:private -v:1 -r:10.129.6.230 -o:.1.3.6.1.4.1.99999.1.61.1 -tp:int -val:1
+
+
+
+
+
+#include <Ethernet_Generic.h>
+#include <EthernetUdp.h>
+IPAddress gw = Ethernet.gatewayIP();
+EthernetUDP hbUDP;
+
+unsigned long lastHeartbeat = 0;
+const unsigned long HEARTBEAT_INTERVAL = 10000; // 10s
+
+void startHeartbeat() {
+  hbUDP.begin(0); // random ephemeral port
+}
+
+void sendHeartbeat() {
+  IPAddress gw = Ethernet.gatewayIP();
+
+  if (gw == INADDR_NONE) return; // safety
+
+  hbUDP.beginPacket(gw, 55555); // arbitrary UDP port
+  hbUDP.print(F("ESP8266-HB"));
+  hbUDP.endPacket();
+}
+
+void loop() {
+  unsigned long now = millis();
+
+  if (now - lastHeartbeat >= HEARTBEAT_INTERVAL) {
+    lastHeartbeat = now;
+    sendHeartbeat();
+  }
+
+  // rest of your app
+}
+
+byte mac[6];
+Ethernet.MACAddress(mac);
+
+char buf[32];
+snprintf(buf, sizeof(buf), "ESP-HB %02X%02X%02X",
+         mac[3], mac[4], mac[5]);
+
+hbUDP.print(buf);
+
