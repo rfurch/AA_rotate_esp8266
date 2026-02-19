@@ -25,6 +25,7 @@ pio run -t upload
 pio device monitor
 pio device monitor -b 115200
 
+# optional
 pio lib 
 pio device monitor
 
